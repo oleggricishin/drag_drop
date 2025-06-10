@@ -36,7 +36,7 @@
               "src/styles.scss"
             ],
             "scripts": [],
-            "baseHref": "/drag_drop/"
+            "baseHref": "/drag-drop/"
           },
           "configurations": {
             "production": {
