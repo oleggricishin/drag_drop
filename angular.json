@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "drag-drop": {
+    "drag_drop": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/drag-drop",
+            "outputPath": "dist/drag_drop",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -36,7 +36,7 @@
               "src/styles.scss"
             ],
             "scripts": [],
-            "baseHref": "/drag-drop/"
+            "baseHref": "/drag_drop/"
           },
           "configurations": {
             "production": {
@@ -66,10 +66,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "drag-drop:build:production"
+              "buildTarget": "drag_drop:build:production"
             },
             "development": {
-              "buildTarget": "drag-drop:build:development"
+              "buildTarget": "drag_drop:build:development"
             }
           },
           "defaultConfiguration": "development"
