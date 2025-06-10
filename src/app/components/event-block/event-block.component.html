@@ -1,0 +1,22 @@
+<div #eventBlock
+     class="event-block  cursor-pointer"
+     [style.background]="background"
+     [style.width.px]="blockWidthPx()"
+     [style.height.px]="blockHeightPx()"
+     [attr.data-event-id]="event().id"
+     cdkDrag
+     (cdkDragEnded)="dragEnded.emit({$event: $event, event: event()})"
+     (cdkDragStarted)="dragStarted.emit({$event: $event, event: event()})"
+     (cdkDragMoved)="dragMoved.emit({$event: $event, event: event()})"
+     [style.top.px]="top()"
+     [style.left.px]="left()"
+     cdkDragBoundary=".grid-content"
+     (dblclick)="onEditEvent()"
+>
+  <div class="event-content">
+    <p>{{ event().name }} - {{ event().supplierId }} / Amount: {{ event().amount }} / {{ event().startWeek }}
+      - {{ event().endWeek }} / Product Type {{ event().productType }}</p>
+  </div>
+</div>
+<!--
+{{(event().productType === 'M') ? 'bg-blue-100' : 'bg-pink-100'}}-->

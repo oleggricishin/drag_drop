@@ -1,0 +1,33 @@
+<div class="flex pb-4 w-full">
+  <div class="w-3">
+    <h3>Suppliers</h3>
+    <button mat-stroked-button (click)="addSuppliers()">Supplier</button>
+    <!--<input type="file" (change)="onSuppliersSelect($event)" accept=".csv" />
+    <p>
+      @if (suppliers().length > 0) {
+        Loaded successfully
+      } @else {
+        No data or data is incorrect
+      }
+    </p>-->
+  </div>
+  <div class="w-3">
+    <h3>Demand</h3>
+    <div class="flex gap-2">
+      <button mat-stroked-button (click)="addDemand()">Demand</button>
+      <button mat-stroked-button (click)="importData()">Import Data</button>
+      <button mat-stroked-button (click)="exportData()">Export Data</button>
+    </div>
+
+    <!--<p>Load Demand</p>
+    <input type="file" (change)="onDemandSelect($event)" accept=".csv" />
+    <p>
+      @if (demand().length > 0) {
+        Loaded successfully
+      } @else {
+        No data or data is incorrect
+      }
+    </p>-->
+  </div>
+</div>
+
