@@ -32,6 +32,6 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist/${{ github.event.repository.name }} # Adjust if your output path is different
+          publish_dir: ./dist/${{ github.event.repository.name }}/browser # Adjust if your output path is different
           # Example if your angular.json outputPath was just "dist":
           # publish_dir: ./dist
