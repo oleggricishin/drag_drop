@@ -5,7 +5,7 @@ import {
   ViewChild,
   AfterViewInit,
   ChangeDetectorRef,
-  ChangeDetectionStrategy, signal, WritableSignal
+  ChangeDetectionStrategy, signal, WritableSignal, HostListener, ViewChildren, viewChild, viewChildren
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DragDropModule, CdkDragEnd, CdkDragStart, CdkDragMove } from '@angular/cdk/drag-drop';
@@ -16,7 +16,7 @@ import { Supplier } from '../../models/supplier.model';
 import { Week } from '../../models/week.model';
 import {ImportDataComponent} from '../import-data/import-data.component';
 import {DataService} from '../../services/data.service';
-import {combineLatest, filter} from 'rxjs';
+import {combineLatest, filter, fromEvent, throttleTime} from 'rxjs';
 import {MatButtonModule} from '@angular/material/button';
 import {addWeeks, getISOWeek, setWeek, setYear, startOfWeek, subWeeks} from 'date-fns';
 
@@ -44,9 +44,12 @@ interface EventRect {
 })
 export class SchedulerGridComponent implements OnInit, AfterViewInit {
   @ViewChild('gridContainer') gridContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('supplierContainer') supplierContainer!: ElementRef<HTMLDivElement>;
 
   WEEK_COLUMN_WIDTH_PX = 30;
   AMOUNT_ROW_HEIGHT_UNIT_PX = 0.02;
+  SUPPLIER_COLUMN_WIDTH_PX = 130;
 
   weeks: Week[] = [];
   suppliers: Supplier[] = [];
@@ -88,6 +91,8 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    this.onScrollContainer();
+    this.onScrollSuppliers();
     this.cdr.detectChanges();
   }
 
@@ -634,5 +639,36 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
     this.dataService.events$.next(this.events());
     this.dataService.suppliers$.next(this.suppliers);
     this.selfUpdate = false;
+  }
+
+  onScrollContainer() {
+    if (!this.scrollContainer) {
+      setTimeout(() => {
+        this.onScrollContainer();
+      }, 100);
+      return;
+    }
+
+    fromEvent(this.scrollContainer.nativeElement, 'scroll')
+      .pipe(throttleTime(0)) // optional: reduce event frequency
+      .subscribe(() => {
+        this.supplierContainer.nativeElement.scrollTop = this.scrollContainer.nativeElement.scrollTop;
+      });
+  }
+
+  onScrollSuppliers() {
+    if (!this.supplierContainer) {
+      setTimeout(() => {
+        this.onScrollSuppliers();
+      }, 100);
+      return;
+    }
+    debugger
+
+    fromEvent(this.supplierContainer.nativeElement, 'scroll')
+      .pipe(throttleTime(0)) // optional: reduce event frequency
+      .subscribe(() => {
+        this.scrollContainer.nativeElement.scrollTop = this.supplierContainer.nativeElement.scrollTop;
+      });
   }
 }

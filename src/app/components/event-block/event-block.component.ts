@@ -66,6 +66,7 @@ export class EventBlockComponent implements OnInit {
       4: {color: '', pixel: ''}
     };
     const mainColor = (this.event().productType === 'F') ? 'pink' : '#007bff';
+    const mainShiftColor = (this.event().productType === 'F') ? '#A40006' : '#FF453A';
     const mainWidth = (this.event().productType === 'F') ? '570px' : '330px';
     let first = this.event().date;
     let second = this.event().startWeek;
@@ -77,9 +78,9 @@ export class EventBlockComponent implements OnInit {
     }
     const durationWeeks = this.dateUtils.getWeekRangeCount(first, second) - 1;
     if (shifting === 'left') {
-      bV['1'].color = 'red';
+      bV['1'].color = mainShiftColor;
       bV['1'].pixel = '0px';
-      bV['2'].color = 'red';
+      bV['2'].color = mainShiftColor;
       bV['2'].pixel = '0px';
       bV['3'].color =  mainColor;
       bV['3'].pixel = '0px';
@@ -94,9 +95,9 @@ export class EventBlockComponent implements OnInit {
       bV['1'].pixel = '0px';
       bV['2'].color = mainColor;
       bV['2'].pixel = mainWidth;
-      bV['3'].color = 'red';
+      bV['3'].color = mainShiftColor;
       bV['3'].pixel = mainWidth;
-      bV['4'].color = 'red';
+      bV['4'].color = mainShiftColor;
       bV['4'].pixel = mainWidth;
       if (durationWeeks > this.event().maxShiftWeeksLate) {
         const diff = durationWeeks - this.event().maxShiftWeeksLate;
