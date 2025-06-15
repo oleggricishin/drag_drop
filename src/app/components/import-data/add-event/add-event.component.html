@@ -1,6 +1,6 @@
-<h2 mat-dialog-title>Add suppliers</h2>
+<h2 mat-dialog-title>Add Demand</h2>
 <mat-dialog-content>
-  <form [formGroup]="formEvent">
+ <!-- <form [formGroup]="formEvent">
     <div>
       <mat-form-field>
         <mat-label>Demand id</mat-label>
@@ -49,7 +49,8 @@
         <mat-hint align="end">Choose any, than you can move it to another</mat-hint>
       </mat-form-field>
     </div>
-  </form>
+  </form>-->
+  <input type="file" (change)="onDemandUpload($event)" accept=".csv" />
 </mat-dialog-content>
 <mat-dialog-actions>
   <button mat-button (click)="onCloseDialog()">Close</button>

@@ -12,7 +12,7 @@ export class DateUtilsService {
   getWeekString(date: Date): string {
     const year = getWeekYear(date);
     const week = getISOWeek(date);
-    return `${year}-W${String(week).padStart(2, '0')}`;
+    return `${year}-W${String(week)}`;
   }
 
   parseWeekString(weekString: string): Date {
@@ -39,17 +39,35 @@ export class DateUtilsService {
 
   generateWeekRange(startWeek: string, endWeek: string): Week[] {
     const weeks: Week[] = [];
-    let currentDate = this.parseWeekString(startWeek);
+    /*let currentDate = this.parseWeekString(startWeek);
     const endDate = this.parseWeekString(endWeek);
+
+    debugger
 
     while (currentDate <= endDate) {
       weeks.push({
         year: getWeekYear(currentDate),
         weekNumber: getISOWeek(currentDate),
-        label: `W${String(getISOWeek(currentDate)).padStart(2, '0')}`
+        label: `W${String(getISOWeek(currentDate))}`
       });
       currentDate = addWeeks(currentDate, 1);
+    }*/
+    let [currentYear, currentWeek] = startWeek.split('-W').map(Number);
+    const [endYear, endWeekNumber] = endWeek.split('-W').map(Number);
+
+    while (currentYear <= endYear) {
+        for (let i = currentWeek; i <= ((currentYear < endYear) ? 52 : endWeekNumber); i++) {
+          weeks.push({
+            year: currentYear,
+            weekNumber: i,
+            label: `W${i}`,
+            overflow: false,
+          });
+        }
+        currentYear = currentYear + 1;
+        currentWeek = 1;
     }
+
     return weeks;
   }
 

@@ -1,4 +1,4 @@
-<app-import-data></app-import-data>
+<app-import-data [supplierOverflowErrors]="supplierOverflowErrors" [eventsShiftErrors]="eventsShiftErrors"></app-import-data>
 @if (suppliers.length > 0) {
   <div class="flex pb-4 align-items-center justify-content-center">
     <button mat-stroked-button (click)="addWeeksToRange(true)">+</button>
@@ -18,8 +18,8 @@
             class="supplier-row-header"
             [style.height.px]="(supplier.calculatedCapacity && (supplier.calculatedCapacity > supplier.capacity)) ? supplier.calculatedCapacity * AMOUNT_ROW_HEIGHT_UNIT_PX : supplier.capacity * AMOUNT_ROW_HEIGHT_UNIT_PX"
           >
-            {{ supplier.name }} ({{ supplier.capacity }}
-            ) @if (supplier.calculatedCapacity && (supplier.calculatedCapacity > supplier.capacity)) {
+            {{ supplier.name }} @if (supplier.id !== 'unassigned') {({{ supplier.capacity }})}
+            @if (supplier.calculatedCapacity && (supplier.calculatedCapacity > supplier.capacity)) {
           }
             @if (supplier.calculatedCapacity && (supplier.calculatedCapacity > supplier.capacity)) {
               <div class="grid-background-supplier-overflow"
@@ -51,6 +51,7 @@
           @for (week of weeks; track week) {
             <div
               class="week-header"
+              [class.overflow-week]="week.overflow"
               [style.width.px]="WEEK_COLUMN_WIDTH_PX"
             >
               {{ week.label }}

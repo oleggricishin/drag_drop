@@ -71,6 +71,9 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
   selfUpdate = false;
 
+  supplierOverflowErrors: string[] = [];
+  eventsShiftErrors: string[] = [];
+
   constructor(private dateUtils: DateUtilsService, private cdr: ChangeDetectorRef, private dataService: DataService) { }
 
   ngOnInit(): void {
@@ -84,6 +87,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
         if ((suppliers.length > 0) && (events.length > 0)) {
           this.generateWeekRange(events);
           this.events.set(events);
+          this.checkForUnassignedEvents();
           this.calculateAllEventPositions();
         }
         this.cdr.detectChanges();
@@ -94,6 +98,27 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
     this.onScrollContainer();
     this.onScrollSuppliers();
     this.cdr.detectChanges();
+  }
+
+  checkForUnassignedEvents() {
+    const unassigned = this.events().filter(event => event.supplierId === 'unassigned');
+    if (unassigned?.length > 0) {
+      // check if suppliers has such supplier
+      if (this.suppliers.length === 0 || this.suppliers[0].id !== 'unassigned') {
+        this.suppliers.unshift({
+          id: 'unassigned',
+          name: 'Unassigned',
+          capacity: 0,
+          calculatedCapacity: 0,
+        });
+      }
+      unassigned.forEach(event => {
+        if (event.amount > this.suppliers[0].capacity) {
+          this.suppliers[0].capacity = event.amount;
+          this.suppliers[0].calculatedCapacity = event.amount;
+        }
+      })
+    }
   }
 
   generateWeekRange(events: EventData[]) {
@@ -140,22 +165,22 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
   getYearsArray() {
     const arr: {year: number; count: number}[] = [];
-    let currentYear: number = 0;
-    let count: number = 0;
-    this.weeks.forEach((week, ind) => {
-      if (currentYear === week.year) {
-        count = count + 1;
-      } else {
-        if ((currentYear !== 0) && (ind !== this.weeks.length - 1)) {
+    if (this.weeks.length > 0) {
+      let currentYear: number = this.weeks[0].year;
+      let count: number = 0;
+      this.weeks.forEach((week, ind) => {
+        if (currentYear === week.year) {
+          count = count + 1;
+        } else {
+          arr.push({year: currentYear, count: count});
+          currentYear = week.year;
+          count = 1;
+        }
+        if (ind === this.weeks.length - 1) {
           arr.push({year: currentYear, count: count});
         }
-        currentYear = week.year;
-        count = 1;
-      }
-      if (ind === this.weeks.length - 1) {
-        arr.push({year: currentYear, count: count});
-      }
-    });
+      });
+    }
     this.years = arr;
   }
 
@@ -191,8 +216,10 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
     // Initialize map for each supplier
     this.suppliers.forEach(supplier => {
-      supplierWeeklyAmounts.set(supplier.id, new Map<string, number>());
-      supplier.calculatedCapacity = 0; // Reset for recalculation
+      if (supplier.id !== 'unassigned') {
+        supplierWeeklyAmounts.set(supplier.id, new Map<string, number>());
+        supplier.calculatedCapacity = 0; // Reset for recalculation
+      }
     });
 
     // Iterate through all events to accumulate amounts per week per supplier
@@ -215,6 +242,9 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
       }
     });
 
+    this.weeks.forEach((week) => {week.overflow = false;});
+    this.supplierOverflowErrors = [];
+
     // Determine the peak usage for each supplier
     this.suppliers.forEach(supplier => {
       const weeklyAmountsMap = supplierWeeklyAmounts.get(supplier.id);
@@ -226,6 +256,24 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
           }
         });
         supplier.calculatedCapacity = peakAmount; // Assign the peak usage
+        let errorWeeks: string = '';
+        if (peakAmount > supplier.capacity) {
+          for (const key of weeklyAmountsMap.keys()) {
+            const value: any = weeklyAmountsMap.get(key);
+            if (value > supplier.capacity) {
+              this.weeks.forEach((week) => {
+                if (key === `${week.year}-${week.label}`) {
+                  week.overflow = true;
+                }
+              });
+              errorWeeks = `${errorWeeks}${errorWeeks.length ? ', ' : ''}${key}`;
+            }
+          }
+        }
+
+        if (errorWeeks.length > 0) {
+          this.supplierOverflowErrors.push(`Supplier <span>${supplier.name}</span> has overflows in <span>${errorWeeks}</span>`);
+        }
       }
     });
 
@@ -239,7 +287,9 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
   private applyStackingForAllEvents(): void {
     const uniqueSupplierIds = new Set(this.events().map(e => e.supplierId));
     uniqueSupplierIds.forEach(supplierId => {
-      this.applyStackingForLane(supplierId, this.events());
+      if (supplierId && supplierId !== 'unassigned') {
+        this.applyStackingForLane(supplierId, this.events());
+      }
     });
     // After applying stacking, trigger change detection
     this.cdr.detectChanges();
@@ -397,7 +447,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
     let newStartWeekString: string; // Changed to string, no undefined for safety
     if (newStartWeekIndex >= 0 && newStartWeekIndex < this.weeks.length) {
       const newStartWeekObj = this.weeks[newStartWeekIndex];
-      newStartWeekString = this.dateUtils.getWeekString(this.dateUtils.parseWeekString(`${newStartWeekObj.year}-W${String(newStartWeekObj.weekNumber).padStart(2, '0')}`));
+      newStartWeekString = this.dateUtils.getWeekString(this.dateUtils.parseWeekString(`${newStartWeekObj.year}-W${String(newStartWeekObj.weekNumber)}`));
     } else {
       console.warn(`Dropped outside valid week range. X: ${newLogicalX}, Index: ${newStartWeekIndex}. Reverting to original week.`);
       newStartWeekString = eventData.startWeek;
@@ -543,7 +593,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
    * This function is primarily used internally by `calculateAllEventPositions`.
    */
   getEventLeftPosition(event: EventData): void {
-    const startWeekIndex = this.weeks.findIndex(w => this.dateUtils.getWeekString(this.dateUtils.parseWeekString(`${w.year}-W${String(w.weekNumber).padStart(2, '0')}`)) === event.startWeek);
+    const startWeekIndex = this.weeks.findIndex(w => this.dateUtils.getWeekString(this.dateUtils.parseWeekString(`${w.year}-W${String(w.weekNumber)}`)) === event.startWeek);
     if (startWeekIndex !== -1) {
       event.leftPosition = startWeekIndex * this.WEEK_COLUMN_WIDTH_PX;
       return;
@@ -561,7 +611,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
    * Does NOT modify the event object.
    */
   private calculateEventLeftPositionInternal(event: EventData): number {
-    const startWeekIndex = this.weeks.findIndex(w => this.dateUtils.getWeekString(this.dateUtils.parseWeekString(`${w.year}-W${String(w.weekNumber).padStart(2, '0')}`)) === event.startWeek);
+    const startWeekIndex = this.weeks.findIndex(w => this.dateUtils.getWeekString(this.dateUtils.parseWeekString(`${w.year}-W${String(w.weekNumber)}`)) === event.startWeek);
     if (startWeekIndex !== -1) {
       return startWeekIndex * this.WEEK_COLUMN_WIDTH_PX;
     }
@@ -638,7 +688,34 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
     this.selfUpdate = true;
     this.dataService.events$.next(this.events());
     this.dataService.suppliers$.next(this.suppliers);
+    this.checkForEventsErrorMessages();
     this.selfUpdate = false;
+  }
+
+  checkForEventsErrorMessages() {
+    this.eventsShiftErrors = [];
+    this.events().forEach(event => {
+      let first = event.date;
+      let second = event.startWeek;
+      let shifting: 'left' | 'right' = 'right';
+      if (this.dateUtils.parseWeekString(event.startWeek) <= this.dateUtils.parseWeekString(event.date)) {
+        first = event.startWeek;
+        second = event.date;
+        shifting = 'left';
+      }
+      const durationWeeks = this.dateUtils.getWeekRangeCount(first, second) - 1;
+      if (shifting === 'left') {
+        if (durationWeeks > event.maxShiftWeeksEarly) {
+          const diff = durationWeeks - event.maxShiftWeeksEarly;
+          this.eventsShiftErrors.push(`Event <span>${event.name} (${event.productType})</span> is shifted early for <span>${diff} weeks</span>`);
+        }
+      } else {
+        if (durationWeeks > event.maxShiftWeeksLate) {
+          const diff = durationWeeks - event.maxShiftWeeksLate;
+          this.eventsShiftErrors.push(`Event <span>${event.name} (${event.productType})</span> is shifted late for <span>${diff} weeks</span>`);
+        }
+      }
+    });
   }
 
   onScrollContainer() {
@@ -663,7 +740,6 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
       }, 100);
       return;
     }
-    debugger
 
     fromEvent(this.supplierContainer.nativeElement, 'scroll')
       .pipe(throttleTime(0)) // optional: reduce event frequency

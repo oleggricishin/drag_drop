@@ -40,7 +40,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: rgba(red, 0.2);
+        background-color: rgba(red, 0.5);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -96,6 +96,10 @@
 
       &:last-child {
         border-right: none;
+      }
+
+      &.overflow-week {
+        background-color: rgba(red, 0.5);
       }
     }
   }

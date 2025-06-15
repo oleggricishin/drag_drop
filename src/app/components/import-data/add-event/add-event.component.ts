@@ -20,6 +20,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {Supplier} from '../../../models/supplier.model';
 import {MatSelectModule} from '@angular/material/select';
 import {addWeeks, getISOWeek, setWeek, setYear, startOfWeek} from 'date-fns';
+import * as Papa from 'papaparse';
 
 export function validWeekFormatValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -58,6 +59,7 @@ export class AddEventComponent {
 
   formEvent: FormGroup;
   suppliers: WritableSignal<Supplier[]> = signal([]);
+  demand: WritableSignal<EventData[]> = signal([]);
 
   constructor(private fb: FormBuilder, public dataService: DataService, private destroyRef: DestroyRef) {
     this.formEvent = this.fb.group({
@@ -77,10 +79,53 @@ export class AddEventComponent {
     });
   }
 
+  onDemandUpload(event: Event) {
+    const file = (event.target as HTMLInputElement)?.files?.[0];
+
+    if (file) {
+      this.demand.set([]);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const csv = reader.result as string;
+        Papa.parse(csv, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (result: any) => {
+            if (result.data?.length) {
+              const arr: any[] = [];
+              result.data.forEach((item: any) => {
+                if (item.hasOwnProperty('amount') && item.hasOwnProperty('date') && item.hasOwnProperty('id') && item.hasOwnProperty('max_shift_weeks_early') && item.hasOwnProperty('max_shift_weeks_late') && item.hasOwnProperty('product_type')) {
+                  arr.push({
+                    id: `${item.id}_${item.date}`,
+                    name: item.id,
+                    startWeek: item.date,
+                    endWeek: this.getISOWeekString(addWeeks(this.getDateFromISOWeekStr(item.date), (item.product_type === 'F') ? 18 : 10)),
+                    date: item.date,
+                    amount: +item.amount,
+                    supplierId: 'unassigned',
+                    leftPosition: 0,
+                    topPosition: 0,
+                    maxShiftWeeksEarly: +item.max_shift_weeks_early,
+                    maxShiftWeeksLate: +item.max_shift_weeks_late,
+                    productType: item.product_type,
+                    stackOffsetPx: 0
+                  });
+                }
+              });
+              this.demand.set(arr);
+              this.dialogRef.close(this.demand());
+            }
+          },
+        });
+      };
+      reader.readAsText(file);
+    }
+  }
+
   onCloseDialog(close = true): void {
     let events: EventData[] | null = null;
     if (!close) {
-      this.formEvent.markAsTouched();
+      /*this.formEvent.markAsTouched();
       if (this.formEvent.invalid) return;
       const data = this.formEvent.value;
       data.id = `${data.id}_${data.date}`;
@@ -91,7 +136,7 @@ export class AddEventComponent {
       eventMale.endWeek =  this.getISOWeekString(addWeeks(this.getDateFromISOWeekStr(eventMale.startWeek), 10));
       eventMale.productType = 'M';
 
-      events = [eventFemale, eventMale];
+      events = [eventFemale, eventMale];*/
     }
     this.dialogRef.close(events ? events : null);
   }
@@ -109,6 +154,6 @@ export class AddEventComponent {
   getISOWeekString(date: Date): string {
     const week = getISOWeek(date);
     const year = date.getFullYear();
-    return `${year}-W${week.toString().padStart(2, '0')}`;
+    return `${year}-W${week.toString()}`;
   }
 }

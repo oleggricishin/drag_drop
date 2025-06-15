@@ -1,25 +1,33 @@
-import {Component, inject, signal, WritableSignal} from '@angular/core';
-import * as Papa from 'papaparse';
+import {Component, inject, input, signal, WritableSignal} from '@angular/core';
 import {DataService} from '../../services/data.service';
 import { Supplier } from '../../models/supplier.model';
 import {EventData} from '../../models/event.model';
-import { setWeek, startOfWeek, setYear, getISOWeek, addWeeks, parseISO, format  } from 'date-fns';
 import {DateUtilsService} from '../../services/date-utils.service';
 import {MatButtonModule} from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import {AddSupplierComponent} from './add-supplier/add-supplier.component';
 import {AddEventComponent} from './add-event/add-event.component';
 import {ImportDialogComponent} from './import-dialog/import-dialog.component';
+import {MatInputModule} from '@angular/material/input';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {FormsModule} from '@angular/forms';
+import {combineLatest} from 'rxjs';
 
 @Component({
   selector: 'app-import-data',
   imports: [MatButtonModule,
+    MatInputModule,
+    MatFormFieldModule,
+    FormsModule
   ],
   standalone: true,
   templateUrl: './import-data.component.html',
   styleUrls: ['./import-data.component.scss']
 })
 export class ImportDataComponent {
+  supplierOverflowErrors = input<string[]>([]);
+  eventsShiftErrors = input<string[]>([]);
+
   suppliers: WritableSignal<Supplier[]> = signal([]);
   events: WritableSignal<EventData[]> = signal([]);
 
@@ -27,6 +35,12 @@ export class ImportDataComponent {
 
 
   constructor(public dataService: DataService, private dateService: DateUtilsService) {
+    combineLatest([
+      this.dataService.suppliers$,
+      this.dataService.events$
+    ]).subscribe(([suppliers, events]) => {
+      this.checkForWarningMessages(suppliers, events);
+    })
   }
 
   addSuppliers() {
@@ -52,10 +66,11 @@ export class ImportDataComponent {
 
     dialogRef.afterClosed().subscribe((result: EventData[]) => {
       if (result) {
-        this.events.set(this.dataService.events$.getValue());
+        /*this.events.set(this.dataService.events$.getValue());
         this.events.update((e) => {
           return e.concat(result);
-        });
+        });*/
+        this.events.set(result);
         this.dataService.events$.next(this.events());
       }
     });
@@ -89,6 +104,13 @@ export class ImportDataComponent {
     anchor.click();
 
     URL.revokeObjectURL(url);
+  }
+
+  checkForWarningMessages(suppliers: Supplier[], events: EventData[]) {
+    const warnings: string[] = [];
+    suppliers.forEach((supplier) => {
+
+    });
   }
 
 
