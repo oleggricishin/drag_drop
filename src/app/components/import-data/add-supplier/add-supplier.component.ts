@@ -81,7 +81,7 @@ export class AddSupplierComponent implements OnInit {
                   arr.push({
                     ...item,
                     capacity: +item.capacity,
-                    name: item.id,
+                    name: (item?.name) ? item.name : item.id,
                   });
                 }
               });

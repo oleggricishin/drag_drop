@@ -12,6 +12,7 @@ import {MatInputModule} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
 import {combineLatest} from 'rxjs';
+import Papa from 'papaparse';
 
 @Component({
   selector: 'app-import-data',
@@ -92,7 +93,9 @@ export class ImportDataComponent {
   }
 
   exportData() {
-    const data = {events: this.dataService.events$.getValue(), suppliers: this.dataService.suppliers$.getValue()};
+    const events = this.dataService.events$.getValue();
+    const suppliers = this.dataService.suppliers$.getValue();
+    const data = {events: events, suppliers: suppliers};
     const jsonStr = JSON.stringify(data, null, 2); // pretty print
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const timestamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
@@ -102,8 +105,38 @@ export class ImportDataComponent {
     anchor.href = url;
     anchor.download = filename;
     anchor.click();
-
     URL.revokeObjectURL(url);
+
+    const eventsSorted =  events.sort((a, b) => {
+      const dateA = this.dateService.parseWeekString(a.date);
+      const dateB = this.dateService.parseWeekString(b.date);
+      return dateA.getTime() - dateB.getTime();
+    }).filter(e => e.productType === 'F').map(e => {
+
+        return {
+          producer_id: e.name,
+          'einstallung_wish_date(sus1)': e.date,
+          'einstallung_real_date': e.startWeek,
+          producer_name: e.name,
+          'demand_femal_cap': e.amount,
+          'demand_male_cap': e.amount,
+          aufzucht_id: e.supplierId,
+          aufzucht_name: suppliers.find(s => s.id === e.supplierId)?.name,
+          aufzucht_cap: suppliers.find(s => s.id === e.supplierId)?.capacity,
+        }
+
+    });
+
+    const csv = Papa.unparse(eventsSorted);
+
+    const blobCsv = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const urlCsv = URL.createObjectURL(blobCsv);
+    const aCsv = document.createElement('a');
+    aCsv.href = urlCsv;
+    aCsv.download = `export-data-${timestamp}.csv`;
+
+    aCsv.click();
+    URL.revokeObjectURL(urlCsv);
   }
 
   checkForWarningMessages(suppliers: Supplier[], events: EventData[]) {
