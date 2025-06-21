@@ -39,7 +39,7 @@ export function noSpacesValidator(): ValidatorFn {
     MatButtonModule,
     MatDialogTitle,
     MatDialogContent,
-    MatDialogActions
+    MatDialogActions,
   ],
   templateUrl: './add-supplier.component.html',
   styleUrls: ['./add-supplier.component.scss']

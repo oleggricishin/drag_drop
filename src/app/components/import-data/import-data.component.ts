@@ -13,13 +13,17 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import {FormsModule} from '@angular/forms';
 import {combineLatest} from 'rxjs';
 import Papa from 'papaparse';
+import {MatTabsModule} from '@angular/material/tabs';
+import {MatBadgeModule} from '@angular/material/badge';
 
 @Component({
   selector: 'app-import-data',
   imports: [MatButtonModule,
     MatInputModule,
     MatFormFieldModule,
-    FormsModule
+    FormsModule,
+    MatTabsModule,
+    MatBadgeModule,
   ],
   standalone: true,
   templateUrl: './import-data.component.html',
@@ -28,6 +32,8 @@ import Papa from 'papaparse';
 export class ImportDataComponent {
   supplierOverflowErrors = input<string[]>([]);
   eventsShiftErrors = input<string[]>([]);
+  shiftPenalties = input<number>(0);
+  unassignedPenalties = input<{amount: number, demand: number}>({amount: 0, demand: 0});
 
   suppliers: WritableSignal<Supplier[]> = signal([]);
   events: WritableSignal<EventData[]> = signal([]);

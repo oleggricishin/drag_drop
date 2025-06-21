@@ -73,6 +73,8 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
   supplierOverflowErrors: string[] = [];
   eventsShiftErrors: string[] = [];
+  shiftPenalties: number = 0;
+  unassignedPenalties = {amount: 0, demand: 0};
 
   constructor(private dateUtils: DateUtilsService, private cdr: ChangeDetectorRef, private dataService: DataService) { }
 
@@ -694,6 +696,9 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
   checkForEventsErrorMessages() {
     this.eventsShiftErrors = [];
+    this.shiftPenalties = 0;
+    this.unassignedPenalties.amount = 0;
+    this.unassignedPenalties.demand = 0;
     this.events().forEach(event => {
       let first = event.date;
       let second = event.startWeek;
@@ -707,13 +712,20 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
       if (shifting === 'left') {
         if (durationWeeks > event.maxShiftWeeksEarly) {
           const diff = durationWeeks - event.maxShiftWeeksEarly;
+          this.shiftPenalties += event.amount * diff;
           this.eventsShiftErrors.push(`Event <span>${event.name} (${event.productType})</span> is shifted early for <span>${diff} weeks</span>`);
         }
       } else {
         if (durationWeeks > event.maxShiftWeeksLate) {
           const diff = durationWeeks - event.maxShiftWeeksLate;
+          this.shiftPenalties += event.amount * diff;
           this.eventsShiftErrors.push(`Event <span>${event.name} (${event.productType})</span> is shifted late for <span>${diff} weeks</span>`);
         }
+      }
+      // calc unassigned penalties
+      if (event.supplierId === 'unassigned') {
+        this.unassignedPenalties.amount += event.amount;
+        this.unassignedPenalties.demand += 1;
       }
     });
   }
