@@ -1,8 +1,9 @@
 <app-import-data
   [supplierOverflowErrors]="supplierOverflowErrors"
   [eventsShiftErrors]="eventsShiftErrors"
-  [shiftPenalties]="shiftPenalties"
-  [unassignedPenalties]="unassignedPenalties"
+  [shiftPenalties]="shiftPenalties()"
+  [unassignedPenalties]="unassignedPenalties()"
+  [productionPenalties]="productionPenalties()"
 ></app-import-data>
 @if (suppliers.length > 0) {
   <div class="flex pb-4 align-items-center justify-content-center">

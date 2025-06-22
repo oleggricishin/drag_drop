@@ -67,7 +67,7 @@
         <ng-template mat-tab-label>
           Penalties
           <span
-            matBadge="0"
+            matBadge="{{penaltiesBadge() > 0 ? penaltiesBadge() : null}}"
             matBadgeColor="warn"
             matBadgeOverlap="false"
             class="badge-icon"
@@ -77,6 +77,8 @@
           <div style="font-weight: 500;">
             <div>Shift penalties: {{shiftPenalties()}}</div>
             <div>Unassigned penalties: {{unassignedPenalties().amount}} (#{{unassignedPenalties().demand}} demands)</div>
+            <div>Over Production penalties: {{productionPenalties().over}}</div>
+            <div>Under Production penalties: {{productionPenalties().under}}</div>
           </div>
         </div>
       </mat-tab>

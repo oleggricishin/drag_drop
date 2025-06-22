@@ -1,4 +1,4 @@
-import {Component, inject, input, signal, WritableSignal} from '@angular/core';
+import {Component, effect, inject, input, signal, WritableSignal} from '@angular/core';
 import {DataService} from '../../services/data.service';
 import { Supplier } from '../../models/supplier.model';
 import {EventData} from '../../models/event.model';
@@ -34,20 +34,24 @@ export class ImportDataComponent {
   eventsShiftErrors = input<string[]>([]);
   shiftPenalties = input<number>(0);
   unassignedPenalties = input<{amount: number, demand: number}>({amount: 0, demand: 0});
+  productionPenalties = input<{over: number, under: number}>({over: 0, under: 0});
 
   suppliers: WritableSignal<Supplier[]> = signal([]);
   events: WritableSignal<EventData[]> = signal([]);
+  penaltiesBadge: WritableSignal<number> = signal(0);
 
   readonly dialog = inject(MatDialog);
 
 
   constructor(public dataService: DataService, private dateService: DateUtilsService) {
-    combineLatest([
-      this.dataService.suppliers$,
-      this.dataService.events$
-    ]).subscribe(([suppliers, events]) => {
-      this.checkForWarningMessages(suppliers, events);
-    })
+    effect(() => {
+      let badge = 0;
+      if (this.shiftPenalties() > 0) badge += 1;
+      if (this.unassignedPenalties().amount > 0) badge += 1;
+      if (this.productionPenalties().over > 0) badge += 1;
+      if (this.productionPenalties().under > 0) badge += 1;
+      this.penaltiesBadge.set(badge);
+    });
   }
 
   addSuppliers() {
@@ -144,14 +148,6 @@ export class ImportDataComponent {
     aCsv.click();
     URL.revokeObjectURL(urlCsv);
   }
-
-  checkForWarningMessages(suppliers: Supplier[], events: EventData[]) {
-    const warnings: string[] = [];
-    suppliers.forEach((supplier) => {
-
-    });
-  }
-
 
   /*onSuppliersSelect(event: Event): void {
     const file = (event.target as HTMLInputElement)?.files?.[0];

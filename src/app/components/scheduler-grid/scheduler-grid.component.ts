@@ -73,8 +73,9 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
   supplierOverflowErrors: string[] = [];
   eventsShiftErrors: string[] = [];
-  shiftPenalties: number = 0;
-  unassignedPenalties = {amount: 0, demand: 0};
+  shiftPenalties: WritableSignal<number> = signal(0);
+  unassignedPenalties: WritableSignal<{amount: number, demand: number}> = signal({amount: 0, demand: 0});
+  productionPenalties: WritableSignal<{over: number, under: number}> = signal({over: 0, under: 0});
 
   constructor(private dateUtils: DateUtilsService, private cdr: ChangeDetectorRef, private dataService: DataService) { }
 
@@ -246,6 +247,8 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
     this.weeks.forEach((week) => {week.overflow = false;});
     this.supplierOverflowErrors = [];
+    let under = 0;
+    let over = 0;
 
     // Determine the peak usage for each supplier
     this.suppliers.forEach(supplier => {
@@ -258,6 +261,15 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
           }
         });
         supplier.calculatedCapacity = peakAmount; // Assign the peak usage
+
+        // product penalties calc
+        if (supplier.capacity > supplier.calculatedCapacity) {
+          under += supplier.capacity - supplier.calculatedCapacity;
+        }
+        if (supplier.capacity < supplier.calculatedCapacity) {
+          over += supplier.calculatedCapacity - supplier.capacity ;
+        }
+
         let errorWeeks: string = '';
         if (peakAmount > supplier.capacity) {
           for (const key of weeklyAmountsMap.keys()) {
@@ -278,6 +290,8 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
         }
       }
     });
+
+    this.productionPenalties.set({under: under, over: over});
 
     this.cdr.detectChanges(); // Trigger change detection to update the view with new capacities
   }
@@ -696,9 +710,9 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
   checkForEventsErrorMessages() {
     this.eventsShiftErrors = [];
-    this.shiftPenalties = 0;
-    this.unassignedPenalties.amount = 0;
-    this.unassignedPenalties.demand = 0;
+    this.shiftPenalties.set(0);
+    let amount = 0;
+    let demand = 0;
     this.events().forEach(event => {
       let first = event.date;
       let second = event.startWeek;
@@ -712,22 +726,24 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
       if (shifting === 'left') {
         if (durationWeeks > event.maxShiftWeeksEarly) {
           const diff = durationWeeks - event.maxShiftWeeksEarly;
-          this.shiftPenalties += event.amount * diff;
+          this.shiftPenalties.update((v) => v + (event.amount * diff));
           this.eventsShiftErrors.push(`Event <span>${event.name} (${event.productType})</span> is shifted early for <span>${diff} weeks</span>`);
         }
       } else {
         if (durationWeeks > event.maxShiftWeeksLate) {
           const diff = durationWeeks - event.maxShiftWeeksLate;
-          this.shiftPenalties += event.amount * diff;
+          this.shiftPenalties.update((v) => v + (event.amount * diff));
           this.eventsShiftErrors.push(`Event <span>${event.name} (${event.productType})</span> is shifted late for <span>${diff} weeks</span>`);
         }
       }
       // calc unassigned penalties
       if (event.supplierId === 'unassigned') {
-        this.unassignedPenalties.amount += event.amount;
-        this.unassignedPenalties.demand += 1;
+        amount += event.amount;
+        demand += 1;
       }
     });
+
+    this.unassignedPenalties.set({amount, demand});
   }
 
   onScrollContainer() {
