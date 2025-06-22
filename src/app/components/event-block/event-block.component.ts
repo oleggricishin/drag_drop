@@ -12,6 +12,7 @@ import { DateUtilsService } from '../../services/date-utils.service';
 import {CdkDrag} from '@angular/cdk/drag-drop';
 import {EditEventComponent} from './edit-event/edit-event.component';
 import {MatDialog} from '@angular/material/dialog';
+import {DistanceDemand, DistanceSuppliers} from '../../models/distance.model';
 
 @Component({
   selector: 'app-event-block',
@@ -28,6 +29,7 @@ export class EventBlockComponent implements OnInit {
   pixelsPerAmountUnit = input.required<number>();
   top = input.required<number>();
   left = input.required<number>();
+  supplierDistance = input.required<{distance_km: number, distance_minute: number} | null | undefined>();
 
   @Output() dragEnded = new EventEmitter<any>();
   @Output() dragStarted = new EventEmitter<any>();

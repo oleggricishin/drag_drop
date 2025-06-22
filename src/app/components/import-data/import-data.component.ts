@@ -15,6 +15,8 @@ import {combineLatest} from 'rxjs';
 import Papa from 'papaparse';
 import {MatTabsModule} from '@angular/material/tabs';
 import {MatBadgeModule} from '@angular/material/badge';
+import {AddDistanceComponent} from './add-distance/add-distance.component';
+import {DistanceDemand, DistanceSuppliers} from '../../models/distance.model';
 
 @Component({
   selector: 'app-import-data',
@@ -38,6 +40,7 @@ export class ImportDataComponent {
 
   suppliers: WritableSignal<Supplier[]> = signal([]);
   events: WritableSignal<EventData[]> = signal([]);
+  distance: WritableSignal<{demand: DistanceDemand[], suppliers: DistanceSuppliers[]} | null> = signal(null);
   penaltiesBadge: WritableSignal<number> = signal(0);
 
   readonly dialog = inject(MatDialog);
@@ -83,6 +86,23 @@ export class ImportDataComponent {
         });*/
         this.events.set(result);
         this.dataService.events$.next(this.events());
+      }
+    });
+  }
+
+  addDistance() {
+    const dialogRef = this.dialog.open(AddDistanceComponent, {
+      width: '400px',
+    });
+
+    dialogRef.afterClosed().subscribe((result: {demand: DistanceDemand[], suppliers: DistanceSuppliers[]} | null) => {
+      if (result) {
+        /*this.events.set(this.dataService.events$.getValue());
+        this.events.update((e) => {
+          return e.concat(result);
+        });*/
+        this.distance.set(result);
+        this.dataService.distance$.next(this.distance());
       }
     });
   }

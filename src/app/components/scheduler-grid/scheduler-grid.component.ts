@@ -19,6 +19,7 @@ import {DataService} from '../../services/data.service';
 import {combineLatest, filter, fromEvent, throttleTime} from 'rxjs';
 import {MatButtonModule} from '@angular/material/button';
 import {addWeeks, getISOWeek, setWeek, setYear, startOfWeek, subWeeks} from 'date-fns';
+import {DistanceDemand, DistanceSuppliers} from '../../models/distance.model';
 
 // Interface for event bounding boxes (useful for overlap calculations)
 interface EventRect {
@@ -53,6 +54,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
   weeks: Week[] = [];
   suppliers: Supplier[] = [];
+  distance: {demand: DistanceDemand[], suppliers: DistanceSuppliers[]} | null = null;
   events: WritableSignal<EventData[]> = signal([]);
   years: {year: number; count: number}[] = [];
 
@@ -95,6 +97,12 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
         }
         this.cdr.detectChanges();
       });
+    this.dataService.distance$.subscribe((distance) => {
+      this.distance = distance;
+      if (distance) {
+        this.calcDistance();
+      }
+    })
   }
 
   ngAfterViewInit(): void {
@@ -203,6 +211,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
     this.updateSupplierPeakCapacities();
     this.applyStackingForAllEvents();
     this.updateSupplierPeakCapacities();
+    this.calcDistance();
     this.updateEvents();
   }
 
@@ -744,6 +753,25 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
     });
 
     this.unassignedPenalties.set({amount, demand});
+  }
+
+  calcDistance() {
+    if (this.events().length && this.suppliers.length && this.distance) {
+      const events = this.events().map(event => {
+        if (event.supplierId !== 'unassigned') {
+          this.distance?.suppliers?.forEach(supplierDistance => {
+            if (supplierDistance.breeder_id === event.supplierId && supplierDistance.producer_id === event.name) {
+              event.supplierDistance = {
+                distance_km: supplierDistance.distance_km,
+                distance_minute: supplierDistance.distance_minute
+              };
+            }
+          });
+        }
+        return event;
+      });
+      this.events.set(events);
+    }
   }
 
   onScrollContainer() {

@@ -82,16 +82,25 @@
             <div
               class="grid-background-supplier-line"
               [style.top.px]="getSupplierLineTopPosition(i)"
-            ></div>
+            >
+              @if (supplier.calculatedCapacity && (supplier.calculatedCapacity > supplier.capacity)) {
+                <div class="grid-background-supplier-overflow"
+                     [style.height.px]="(supplier.calculatedCapacity - supplier.capacity) * AMOUNT_ROW_HEIGHT_UNIT_PX"
+                     [style.top.px]="supplier.capacity * AMOUNT_ROW_HEIGHT_UNIT_PX"
+                >
+                </div>
+              }
+            </div>
           }
 
 
-          @for (event of events(); track event) {
+          @for (event of events(); track event.id) {
             <app-event-block
               [event]="event"
               [top]="event.topPosition"
               [left]="event.leftPosition"
               [amount]="event.amount"
+              [supplierDistance]="event.supplierDistance"
               [pixelsPerWeek]="WEEK_COLUMN_WIDTH_PX"
               [pixelsPerAmountUnit]="AMOUNT_ROW_HEIGHT_UNIT_PX"
               (dragEnded)="onDragEnded($event.$event, $event.event)"
