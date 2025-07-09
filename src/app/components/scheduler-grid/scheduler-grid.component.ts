@@ -5,7 +5,7 @@ import {
   ViewChild,
   AfterViewInit,
   ChangeDetectorRef,
-  ChangeDetectionStrategy, signal, WritableSignal, HostListener, ViewChildren, viewChild, viewChildren
+  ChangeDetectionStrategy, signal, WritableSignal, HostListener, ViewChildren, viewChild, viewChildren, inject
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DragDropModule, CdkDragEnd, CdkDragStart, CdkDragMove } from '@angular/cdk/drag-drop';
@@ -20,6 +20,8 @@ import {combineLatest, filter, fromEvent, throttleTime} from 'rxjs';
 import {MatButtonModule} from '@angular/material/button';
 import {addWeeks, getISOWeek, setWeek, setYear, startOfWeek, subWeeks} from 'date-fns';
 import {DistanceDemand, DistanceSuppliers} from '../../models/distance.model';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {HttpService} from '../../services/http.service';
 
 // Interface for event bounding boxes (useful for overlap calculations)
 interface EventRect {
@@ -79,7 +81,9 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
   unassignedPenalties: WritableSignal<{amount: number, demand: number}> = signal({amount: 0, demand: 0});
   productionPenalties: WritableSignal<{over: number, under: number}> = signal({over: 0, under: 0});
 
-  constructor(private dateUtils: DateUtilsService, private cdr: ChangeDetectorRef, private dataService: DataService) { }
+  private _snackBar = inject(MatSnackBar);
+
+  constructor(private dateUtils: DateUtilsService, private cdr: ChangeDetectorRef, private dataService: DataService, private http: HttpService) { }
 
   ngOnInit(): void {
     combineLatest([
@@ -102,6 +106,9 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
       if (distance) {
         this.calcDistance();
       }
+    });
+    this.http.getDemands().subscribe((res) => {
+      debugger
     })
   }
 
@@ -504,6 +511,28 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
       newSupplierId = eventData.supplierId;
     }
 
+    // check for events that should start from one week and finish in one week
+    let notAllowed = false;
+    if (newSupplierId !== 'unassigned') {
+      const eventsInLane = this.events().filter(e => (e.supplierId === newSupplierId)).filter(e => !((e.id === eventData.id) && (e.productType === eventData.productType)));
+      const weekRange = this.dateUtils.generateWeekRange(newStartWeekString, newEndWeekString).map(w => `${w.year}-${w.label}`);
+      eventsInLane.forEach((evInLane) => {
+        const weekRangeEvInLine = this.dateUtils.generateWeekRange(evInLane.startWeek, evInLane.endWeek).map(w => `${w.year}-${w.label}`);
+        const hasCommon = weekRange.some(item => weekRangeEvInLine.includes(item));
+        if (hasCommon) {
+          if ((evInLane.startWeek !== newStartWeekString) || (evInLane.endWeek !== newEndWeekString)) {
+            notAllowed = true;
+          }
+        }
+      });
+      if (notAllowed) {
+        newSupplierId = eventData.supplierId;
+        newStartWeekString = eventData.startWeek;
+        newEndWeekString = eventData.endWeek;
+        this._snackBar.open('Not allowed');
+      }
+    }
+
     // --- Update Event Data & Re-render ---
     // Create a new array reference and update the specific event to trigger OnPush
     const updatedEvents = this.events().map(e => {
@@ -521,8 +550,10 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
     this.events.set(updatedEvents); // Assign new array to trigger change detection
 
-    this.changeLeftPositionToRelatedEvent(eventData);
-    this.updateEvents();
+    if (!notAllowed) {
+      this.changeLeftPositionToRelatedEvent(eventData);
+      this.updateEvents();
+    }
 
     // After updating the event's core properties, re-calculate all positions and apply stacking
     // The previous calls to getEventLeftPosition(e) and getEventTopPosition(e) were insufficient
