@@ -4,6 +4,7 @@
   [shiftPenalties]="shiftPenalties()"
   [unassignedPenalties]="unassignedPenalties()"
   [productionPenalties]="productionPenalties()"
+  [allCalcSum]="allCalcSum()"
 ></app-import-data>
 @if (suppliers.length > 0) {
   <div class="flex pb-4 align-items-center justify-content-center">
@@ -100,7 +101,7 @@
               [top]="event.topPosition"
               [left]="event.leftPosition"
               [amount]="event.amount"
-              [supplierDistance]="event.supplierDistance"
+              [distance]="event.distance"
               [pixelsPerWeek]="WEEK_COLUMN_WIDTH_PX"
               [pixelsPerAmountUnit]="AMOUNT_ROW_HEIGHT_UNIT_PX"
               (dragEnded)="onDragEnded($event.$event, $event.event)"

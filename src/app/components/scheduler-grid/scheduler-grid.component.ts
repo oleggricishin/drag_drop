@@ -56,7 +56,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
   weeks: Week[] = [];
   suppliers: Supplier[] = [];
-  distance: {demand: DistanceDemand[], suppliers: DistanceSuppliers[]} | null = null;
+  distance: {demand: DistanceDemand[], suppliers: DistanceSuppliers[]} = {demand: [], suppliers: []};
   events: WritableSignal<EventData[]> = signal([]);
   years: {year: number; count: number}[] = [];
 
@@ -80,6 +80,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
   shiftPenalties: WritableSignal<number> = signal(0);
   unassignedPenalties: WritableSignal<{amount: number, demand: number}> = signal({amount: 0, demand: 0});
   productionPenalties: WritableSignal<{over: number, under: number}> = signal({over: 0, under: 0});
+  allCalcSum: WritableSignal<{km: number, min: number}> = signal({km: 0, min: 0});
 
   private _snackBar = inject(MatSnackBar);
 
@@ -103,12 +104,11 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
       });
     this.dataService.distance$.subscribe((distance) => {
       this.distance = distance;
-      if (distance) {
+      if (distance.demand.length && distance.suppliers.length) {
         this.calcDistance();
       }
     });
     this.http.getDemands().subscribe((res) => {
-      debugger
     })
   }
 
@@ -209,16 +209,17 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
     // This is crucial before re-calculating positions, especially after a drag.
     this.events().forEach(event => {
       event.stackOffsetPx = 0; // Reset
+      event.order = 0; // Reset
       // Now calculate the base left and top positions (which modify the event object)
       this.getEventLeftPosition(event);
       this.getEventTopPosition(event); // This calculates the *base* top.
     });
     // Then, apply stacking across all lanes based on their base positions
-    this.applyStackingForAllEvents();
-    this.updateSupplierPeakCapacities();
-    this.applyStackingForAllEvents();
-    this.updateSupplierPeakCapacities();
     this.calcDistance();
+    this.applyStackingForAllEvents();
+    this.updateSupplierPeakCapacities();
+    this.applyStackingForAllEvents();
+    this.updateSupplierPeakCapacities();
     this.updateEvents();
   }
 
@@ -343,7 +344,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
       const durationB = this.dateUtils.getWeekRangeCount(b.startWeek, b.endWeek);
       if (durationA !== durationB) return durationB - durationA;
 
-      return a.id.localeCompare(b.id);
+      return a.order - b.order;
     });
 
     const placedEventRects: EventRect[] = [];
@@ -787,12 +788,12 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
   }
 
   calcDistance() {
-    if (this.events().length && this.suppliers.length && this.distance) {
+    if (this.events().length && this.suppliers.length && this.distance.demand.length && this.distance.suppliers.length) {
       const events = this.events().map(event => {
-        if (event.supplierId !== 'unassigned') {
+        if (event.supplierId !== 'unassigned' && event.productType !== 'M') {
           this.distance?.suppliers?.forEach(supplierDistance => {
             if (supplierDistance.breeder_id === event.supplierId && supplierDistance.producer_id === event.name) {
-              event.supplierDistance = {
+              event.distance = {
                 distance_km: supplierDistance.distance_km,
                 distance_minute: supplierDistance.distance_minute
               };
@@ -801,6 +802,50 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
         }
         return event;
       });
+      const grouped =
+        events.filter(e => (e.supplierId !== 'unassigned') && (e.productType !== 'M'))
+          .reduce((acc, curr) => {
+        const key = `${curr.supplierId}_${curr.startWeek}_${curr.endWeek}`;
+        if (!acc.has(key)) acc.set(key, []);
+        acc.get(key)!.push(curr);  // push full object
+        return acc;
+      }, new Map<string, typeof events>());
+
+      Array.from(grouped.values()).forEach((items) => {
+        if (items.length > 1) {
+          const bestRoute = this.dataService.findShortestRoute(items[0].supplierId, items.map(e => e.name), this.distance.suppliers, this.distance.demand)?.route
+          bestRoute?.forEach((name, ind) => {
+            const findItems = items.find(i => i.name === name);
+            events.forEach(event => {
+              if (event.id === findItems?.id && event.productType !== 'M' && event.supplierId === findItems?.supplierId) {
+                event.order = ind;
+                if (ind !== 0) {
+                  this.distance?.demand?.forEach((demandDistance) => {
+                    if (demandDistance.producer_id_from === bestRoute[ind - 1] && demandDistance.producer_id_too === name) {
+                      event.distance = {
+                        distance_km: demandDistance.distance_km,
+                        distance_minute: demandDistance.distance_minute
+                      };
+                    }
+                  })
+                }
+              }
+            })
+          });
+        }
+      });
+
+      let km = 0;
+      let min = 0;
+      events.forEach(event => {
+        if (event.supplierId !== 'unassigned' && event.productType !== 'M' && event.distance) {
+          km = km + event.distance.distance_km;
+          min = min + event.distance.distance_minute;
+        }
+      });
+
+      this.allCalcSum.set({km, min});
+
       this.events.set(events);
     }
   }

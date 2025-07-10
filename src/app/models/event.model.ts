@@ -12,7 +12,8 @@ export class EventData {
   maxShiftWeeksLate: number;
   productType: 'F' | 'M';
   stackOffsetPx?: number;
-  supplierDistance?: { distance_km: number, distance_minute: number } | null;
+  distance?: { distance_km: number, distance_minute: number } | null;
+  order: number;
 
   constructor(event: EventData) {
     this.id = event.id;
@@ -28,6 +29,7 @@ export class EventData {
     this.maxShiftWeeksLate = event.maxShiftWeeksLate || 0;
     this.productType = event.productType || 'F';
     this.stackOffsetPx = event.stackOffsetPx || 0;
-    this.supplierDistance = null;
+    this.distance = null;
+    this.order = 0;
   }
 }

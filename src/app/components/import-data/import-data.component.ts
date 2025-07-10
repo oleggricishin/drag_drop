@@ -35,12 +35,13 @@ export class ImportDataComponent {
   supplierOverflowErrors = input<string[]>([]);
   eventsShiftErrors = input<string[]>([]);
   shiftPenalties = input<number>(0);
+  allCalcSum = input<{km: number, min: number}>({km: 0, min: 0});
   unassignedPenalties = input<{amount: number, demand: number}>({amount: 0, demand: 0});
   productionPenalties = input<{over: number, under: number}>({over: 0, under: 0});
 
   suppliers: WritableSignal<Supplier[]> = signal([]);
   events: WritableSignal<EventData[]> = signal([]);
-  distance: WritableSignal<{demand: DistanceDemand[], suppliers: DistanceSuppliers[]} | null> = signal(null);
+  distance: WritableSignal<{demand: DistanceDemand[], suppliers: DistanceSuppliers[]}> = signal({demand: [], suppliers: []});
   penaltiesBadge: WritableSignal<number> = signal(0);
 
   readonly dialog = inject(MatDialog);
@@ -95,7 +96,7 @@ export class ImportDataComponent {
       width: '400px',
     });
 
-    dialogRef.afterClosed().subscribe((result: {demand: DistanceDemand[], suppliers: DistanceSuppliers[]} | null) => {
+    dialogRef.afterClosed().subscribe((result: {demand: DistanceDemand[], suppliers: DistanceSuppliers[]}) => {
       if (result) {
         /*this.events.set(this.dataService.events$.getValue());
         this.events.update((e) => {

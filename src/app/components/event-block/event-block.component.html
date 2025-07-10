@@ -15,8 +15,8 @@
 >
   <div class="event-content">
     <p>{{ event().name }} - {{ event().supplierId }} /{{ event().amount }} / {{ event().startWeek }} - {{ event().endWeek }}
-      @if (event()?.supplierDistance) {
-        / {{ supplierDistance()?.distance_km }}km ({{supplierDistance()?.distance_minute}}min)
+      @if (event()?.distance) {
+        / {{ distance()?.distance_km }}km ({{distance()?.distance_minute}}min)
       }
     </p>
   </div>

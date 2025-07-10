@@ -29,7 +29,7 @@ export class EventBlockComponent implements OnInit {
   pixelsPerAmountUnit = input.required<number>();
   top = input.required<number>();
   left = input.required<number>();
-  supplierDistance = input.required<{distance_km: number, distance_minute: number} | null | undefined>();
+  distance = input.required<{distance_km: number, distance_minute: number} | null | undefined>();
 
   @Output() dragEnded = new EventEmitter<any>();
   @Output() dragStarted = new EventEmitter<any>();
