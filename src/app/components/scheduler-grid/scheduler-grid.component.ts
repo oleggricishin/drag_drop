@@ -84,7 +84,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
   private _snackBar = inject(MatSnackBar);
 
-  constructor(private dateUtils: DateUtilsService, private cdr: ChangeDetectorRef, private dataService: DataService, private http: HttpService) { }
+  constructor(private dateUtils: DateUtilsService, private cdr: ChangeDetectorRef, private dataService: DataService) { }
 
   ngOnInit(): void {
     combineLatest([
@@ -108,8 +108,6 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
         this.calcDistance();
       }
     });
-    this.http.getDemands().subscribe((res) => {
-    })
   }
 
   ngAfterViewInit(): void {
@@ -320,7 +318,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
   private applyStackingForAllEvents(): void {
     const uniqueSupplierIds = new Set(this.events().map(e => e.supplierId));
     uniqueSupplierIds.forEach(supplierId => {
-      if (supplierId && supplierId !== 'unassigned') {
+      if (supplierId /*&& supplierId !== 'unassigned'*/) {
         this.applyStackingForLane(supplierId, this.events());
       }
     });
@@ -351,7 +349,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
 
     for (const currentEvent of eventsInLane) {
       const currentEventCalculatedLeft = this.calculateEventLeftPositionInternal(currentEvent);
-      const currentEventWidth = this.getEventBlockWidth(currentEvent);
+      const currentEventWidth = (supplierId === 'unassigned') ? this.WEEK_COLUMN_WIDTH_PX : this.getEventBlockWidth(currentEvent);
       const currentEventHeight = this.getEventBlockHeight(currentEvent);
 
       let maxOverlappingBottom = 0;
@@ -530,7 +528,7 @@ export class SchedulerGridComponent implements OnInit, AfterViewInit {
         newSupplierId = eventData.supplierId;
         newStartWeekString = eventData.startWeek;
         newEndWeekString = eventData.endWeek;
-        this._snackBar.open('Not allowed');
+        this._snackBar.open('Not allowed', undefined, {duration: 3000});
       }
     }
 

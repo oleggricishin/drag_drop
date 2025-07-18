@@ -14,11 +14,16 @@
      (dblclick)="onEditEvent()"
 >
   <div class="event-content">
-    <p>{{ event().name }} - {{ event().supplierId }} /{{ event().amount }} / {{ event().startWeek }} - {{ event().endWeek }}
-      @if (event()?.distance) {
-        / {{ distance()?.distance_km }}km ({{distance()?.distance_minute}}min)
-      }
-    </p>
+    @if (event().productType === 'F') {
+      <p>{{ event().name }} - {{ event().supplierId }} /{{ event().amount }} / {{ event().startWeek }}
+        - {{ event().endWeek }}
+        @if (event()?.distance) {
+          / {{ distance()?.distance_km }}km ({{ distance()?.distance_minute }}min)
+        }
+      </p>
+    } @else {
+      <p>{{ event().amount }}</p>
+    }
   </div>
 </div>
 <!--

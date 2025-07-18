@@ -17,6 +17,7 @@ import {MatTabsModule} from '@angular/material/tabs';
 import {MatBadgeModule} from '@angular/material/badge';
 import {AddDistanceComponent} from './add-distance/add-distance.component';
 import {DistanceDemand, DistanceSuppliers} from '../../models/distance.model';
+import {LoadDataComponent} from './load-data/load-data.component';
 
 @Component({
   selector: 'app-import-data',
@@ -119,6 +120,22 @@ export class ImportDataComponent {
         this.suppliers.set(result.suppliers);
         this.dataService.events$.next(this.events());
         this.dataService.suppliers$.next(this.suppliers());
+      }
+    });
+  }
+
+  loadData() {
+    const dialogRef = this.dialog.open(LoadDataComponent, {
+      width: '400px',
+    });
+    dialogRef.afterClosed().subscribe((result: {events: EventData[], suppliers: Supplier[], distanceSuppliers: DistanceSuppliers[], distanceDemand: DistanceDemand[]} | null) => {
+      if (result) {
+        this.events.set(result.events);
+        this.suppliers.set(result.suppliers);
+        this.distance.set({demand: result.distanceDemand, suppliers: result.distanceSuppliers});
+        this.dataService.events$.next(this.events());
+        this.dataService.suppliers$.next(this.suppliers());
+        this.dataService.distance$.next(this.distance());
       }
     });
   }

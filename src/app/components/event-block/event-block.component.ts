@@ -40,6 +40,9 @@ export class EventBlockComponent implements OnInit {
 
   blockWidthPx = computed(() => {
     const weekCount = this.dateUtils.getWeekRangeCount(this.event().startWeek, this.event().endWeek);
+    if (this.event().supplierId === 'unassigned') {
+      return this.pixelsPerWeek();
+    }
     return weekCount * this.pixelsPerWeek();
   });
   blockHeightPx = computed(() => {
@@ -68,6 +71,11 @@ export class EventBlockComponent implements OnInit {
       4: {color: '', pixel: ''}
     };
     const mainColor = (this.event().productType === 'F') ? 'pink' : '#007bff';
+    if (this.event().supplierId === 'unassigned') {
+      this.background = mainColor;
+      return;
+    }
+
     const mainShiftColor = (this.event().productType === 'F') ? '#A40006' : '#FF453A';
     const mainWidth = (this.event().productType === 'F') ? '570px' : '330px';
     let first = this.event().date;
